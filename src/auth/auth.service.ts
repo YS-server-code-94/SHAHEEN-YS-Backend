@@ -1,149 +1,208 @@
 import bcrypt from "bcryptjs";
 
+import { prisma } from "../database/prisma.js";
+
 import {
-createAccessToken,
-createRefreshToken
+  createAccessToken,
+  createRefreshToken
+} from "./jwt.js";
+
+
+const REFRESH_EXPIRE_DAYS = 30;
+
+
+function refreshExpirationDate(){
+
+  const date = new Date();
+
+  date.setDate(
+    date.getDate() + REFRESH_EXPIRE_DAYS
+  );
+
+  return date;
 }
-from "./jwt.js";
-
-
-interface UserRecord {
-
-id:string;
-
-email:string;
-
-password:string;
-
-}
-
-
-
-const users:UserRecord[]=[];
 
 
 
 export async function register(
-email:string,
-password:string
+  email:string,
+  password:string,
+  gender?: "MALE" | "FEMALE"
 ){
 
+  const existingUser =
+    await prisma.user.findUnique({
+      where:{
+        email
+      }
+    });
 
-const exists =
-users.find(
-u=>u.email===email
-);
+
+  if(existingUser){
+
+    throw new Error(
+      "User already exists"
+    );
+
+  }
 
 
-if(exists){
+  const hashedPassword =
+    await bcrypt.hash(
+      password,
+      12
+    );
 
-throw new Error(
-"User already exists"
-);
+
+  const user =
+    await prisma.user.create({
+
+      data:{
+        email,
+        password:hashedPassword,
+        gender
+      }
+
+    });
+
+
+
+  const accessToken =
+    createAccessToken({
+
+      id:user.id,
+      email:user.email
+
+    });
+
+
+
+  const refreshToken =
+    createRefreshToken({
+
+      id:user.id
+
+    });
+
+
+
+  await prisma.refreshToken.create({
+
+    data:{
+
+      token:refreshToken,
+
+      userId:user.id,
+
+      expiresAt:
+        refreshExpirationDate()
+
+    }
+
+  });
+
+
+
+  return {
+
+    accessToken,
+
+    refreshToken
+
+  };
 
 }
 
-
-
-const hashed =
-await bcrypt.hash(
-password,
-12
-);
-
-
-
-const user={
-
-id:crypto.randomUUID(),
-
-email,
-
-password:hashed
-
-};
-
-
-
-users.push(user);
-
-
-
-return {
-
-accessToken:
-createAccessToken({
-id:user.id,
-email:user.email
-}),
-
-
-refreshToken:
-createRefreshToken({
-id:user.id
-})
-
-};
-
-}
 
 
 
 export async function login(
-email:string,
-password:string
+  email:string,
+  password:string
 ){
 
+  const user =
+    await prisma.user.findUnique({
 
-const user =
-users.find(
-u=>u.email===email
-);
+      where:{
+        email
+      }
 
-
-
-if(!user){
-
-throw new Error(
-"Invalid credentials"
-);
-
-}
+    });
 
 
 
-const valid =
-await bcrypt.compare(
-password,
-user.password
-);
+  if(!user){
+
+    throw new Error(
+      "Invalid credentials"
+    );
+
+  }
 
 
 
-if(!valid){
-
-throw new Error(
-"Invalid credentials"
-);
-
-}
+  const validPassword =
+    await bcrypt.compare(
+      password,
+      user.password
+    );
 
 
 
-return {
+  if(!validPassword){
 
-accessToken:
-createAccessToken({
-id:user.id,
-email:user.email
-}),
+    throw new Error(
+      "Invalid credentials"
+    );
+
+  }
 
 
-refreshToken:
-createRefreshToken({
-id:user.id
-})
 
-};
+  const accessToken =
+    createAccessToken({
+
+      id:user.id,
+
+      email:user.email
+
+    });
+
+
+
+  const refreshToken =
+    createRefreshToken({
+
+      id:user.id
+
+    });
+
+
+
+  await prisma.refreshToken.create({
+
+    data:{
+
+      token:refreshToken,
+
+      userId:user.id,
+
+      expiresAt:
+        refreshExpirationDate()
+
+    }
+
+  });
+
+
+
+  return {
+
+    accessToken,
+
+    refreshToken
+
+  };
 
 }

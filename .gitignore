@@ -25,3 +25,6 @@ skills-lock.json
 # Build output
 dist/
 
+railway-env.json
+.env
+.env.local

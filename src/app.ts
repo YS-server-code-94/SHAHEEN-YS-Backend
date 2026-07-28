@@ -42,3 +42,6 @@ chatRoutes
 
 
 export default app;
+
+
+app.use("/auth", authRoutes);
