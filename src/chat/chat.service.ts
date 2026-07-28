@@ -1,200 +1,207 @@
-import { prisma } from "../database/prisma.js";
-import { AIProvider } from "@prisma/client";
+import {
+  prisma
+} from "../database/prisma.js";
+
+import {
+  aiGateway
+} from "../ai/ai.gateway.js";
 
 
-interface ChatInput {
-
-userId:string;
-
-message:string;
-
-conversationId?:string;
-
-provider?:string;
-
-model?:string;
-
-language?:string;
-
-}
+import {
+  AIProviderName
+} from "../ai/ai.types.js";
 
 
 
-export async function processChat(
+export interface ChatInput {
 
-input:ChatInput
+  userId:string;
 
-){
+  message:string;
 
+  title?:string;
 
+  language?: 
+    "AR" |
+    "EN";
 
-const start =
-Date.now();
+  gender?:
+    "MALE" |
+    "FEMALE";
 
+  conversationId?:string;
 
-
-let conversation;
-
-
-
-if(input.conversationId){
-
-
-conversation =
-await prisma.conversation.findFirst({
-
-where:{
-
-id:input.conversationId,
-
-userId:input.userId
-
-}
-
-});
-
+  provider?:AIProviderName;
 
 }
 
 
 
-if(!conversation){
+class ChatService {
 
 
-conversation =
-await prisma.conversation.create({
-
-data:{
-
-
-userId:input.userId,
+  async processMessage(
+    input:ChatInput
+  ){
 
 
-title:
-input.message.substring(0,50),
+    let conversation;
 
 
-language:
-input.language === "AR"
-?
-"AR"
-:
-"EN"
+
+    if(input.conversationId){
+
+
+      conversation =
+        await prisma.conversation.findUnique({
+
+          where:{
+            id:input.conversationId
+          }
+
+        });
+
+
+    }
+
+
+
+    if(!conversation){
+
+
+      conversation =
+        await prisma.conversation.create({
+
+          data:{
+
+            userId:
+              input.userId,
+
+
+            title:
+              input.title ??
+              input.message.substring(
+                0,
+                60
+              )
+
+          }
+
+        });
+
+
+    }
+
+
+
+    await prisma.message.create({
+
+      data:{
+
+        conversationId:
+          conversation.id,
+
+
+        role:
+          "USER",
+
+
+        content:
+          input.message
+
+      }
+
+    });
+
+
+
+    const aiResponse =
+      await aiGateway.chat({
+
+        messages:[
+
+          {
+
+            role:"user",
+
+            content:
+              input.message
+
+          }
+
+        ]
+
+      });
+
+
+
+    await prisma.message.create({
+
+      data:{
+
+        conversationId:
+          conversation.id,
+
+
+        role:
+          "ASSISTANT",
+
+
+        content:
+          aiResponse.content,
+
+
+        provider:
+          aiResponse.provider,
+
+
+        model:
+          aiResponse.model,
+
+
+        tokens:
+          aiResponse.tokens,
+
+
+        latency:
+          aiResponse.latency
+
+      }
+
+    });
+
+
+
+    return {
+
+      conversationId:
+        conversation.id,
+
+
+      message:
+        aiResponse.content,
+
+
+      provider:
+        aiResponse.provider,
+
+
+      tokens:
+        aiResponse.tokens,
+
+
+      latency:
+        aiResponse.latency
+
+    };
+
+
+  }
 
 
 }
 
-});
 
 
-}
-
-
-
-await prisma.message.create({
-
-data:{
-
-
-conversationId:
-conversation.id,
-
-
-role:"USER",
-
-
-content:
-input.message
-
-
-}
-
-});
-
-
-
-
-
-/*
-AI Provider Placeholder
-
-
-OpenAI
-Gemini
-Claude
-Groq
-
- المرحلة القادمة
-*/
-
-
-const aiResponse =
-`Echo: ${input.message}`;
-
-
-
-const latency =
-Date.now()-start;
-
-
-
-const assistantMessage =
-await prisma.message.create({
-
-data:{
-
-
-conversationId:
-conversation.id,
-
-
-role:"ASSISTANT",
-
-
-content:
-aiResponse,
-
-
-provider:
-input.provider
-? input.provider as AIProvider
-: null,
-
-
-model:
-input.model || null,
-
-
-tokens:
-aiResponse.length,
-
-
-latency
-
-}
-
-});
-
-
-
-
-return {
-
-
-conversationId:
-conversation.id,
-
-
-message:
-assistantMessage.content,
-
-
-createdAt:
-assistantMessage.createdAt
-
-
-};
-
-
-
-}
+export const chatService =
+  new ChatService();

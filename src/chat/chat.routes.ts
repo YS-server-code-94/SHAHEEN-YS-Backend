@@ -1,43 +1,43 @@
-import {
-Router
-}
-from "express";
-
+import { Router } from "express";
 
 import {
-authMiddleware
-}
-from "../auth/auth.middleware.js";
+ sendChat,
+ chatHistory
+
+} from "./chat.controller.js";
 
 
 import {
-chatRateLimiter
-}
-from "../middleware/rateLimit.js";
+ authMiddleware
 
-
-import {
-chatController
-}
-from "./chat.controller.js";
+} from "../auth/auth.middleware.js";
 
 
 
-const router =
-Router();
-
-
-
-router.use(authMiddleware);
-
-
-router.use(chatRateLimiter);
+const router = Router();
 
 
 
 router.post(
-"/",
-chatController
+
+ "/",
+
+ authMiddleware,
+
+ sendChat
+
+);
+
+
+
+router.get(
+
+ "/history",
+
+ authMiddleware,
+
+ chatHistory
+
 );
 
 

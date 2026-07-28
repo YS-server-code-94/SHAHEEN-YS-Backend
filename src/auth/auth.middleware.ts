@@ -1,104 +1,66 @@
-import {
-Request,
-Response,
-NextFunction
-}
-from "express";
-
-
+import { Request, Response, NextFunction } from "express";
 import jwt from "jsonwebtoken";
 
+export type UserRole = "USER" | "ADMIN";
 
-const SECRET =
-process.env.JWT_ACCESS_SECRET ||
-"development_access_secret";
+export interface AuthUser {
+  id: string;
+  role: UserRole;
+}
 
+export interface AuthRequest extends Request {
+  user?: AuthUser;
+}
 
 
 export function authMiddleware(
+  req: Request,
+  res: Response,
+  next: NextFunction
+) {
+  try {
 
-req:Request,
+    const header = req.headers.authorization;
 
-res:Response,
-
-next:NextFunction
-
-){
-
-
-try{
-
-
-const header =
-req.headers.authorization;
+    if (!header || !header.startsWith("Bearer ")) {
+      return res.status(401).json({
+        error: "Missing authorization token"
+      });
+    }
 
 
-
-if(!header){
-
-return res.status(401).json({
-
-error:"Missing token"
-
-});
-
-}
+    const token = header.split(" ")[1];
 
 
-
-const token =
-header.replace(
-"Bearer ",
-""
-);
-
-
-
-const decoded =
-jwt.verify(
-token,
-SECRET
-);
-
-
-
-req.user =
-decoded as any;
-
-
-
-next();
-
-
-
-}catch(error){
-
-
-return res.status(401).json({
-
-error:"Invalid token"
-
-});
-
-
-}
-
-
-
-}
-
-
-export interface AuthRequest extends Request {
-
-    user?: {
-
-        id:string;
-
-        role?:string;
-
-        email?:string;
-
+    const decoded = jwt.verify(
+      token,
+      process.env.JWT_SECRET as string
+    ) as {
+      id: string;
+      role?: string;
     };
 
-}
 
+    const role: UserRole =
+      decoded.role === "ADMIN"
+        ? "ADMIN"
+        : "USER";
+
+
+    (req as AuthRequest).user = {
+      id: decoded.id,
+      role
+    };
+
+
+    next();
+
+
+  } catch(error){
+
+    return res.status(401).json({
+      error:"Invalid token"
+    });
+
+  }
+}

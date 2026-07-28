@@ -7,16 +7,17 @@ from "express";
 import {
 
 registerController,
-
-loginController
+loginController,
+refreshController,
+logoutController,
+logoutAllController
 
 }
 from "./auth.controller.js";
 
 
 
-const router =
-Router();
+const router=Router();
 
 
 
@@ -30,6 +31,27 @@ registerController
 router.post(
 "/login",
 loginController
+);
+
+
+
+router.post(
+"/refresh",
+refreshController
+);
+
+
+
+router.post(
+"/logout",
+logoutController
+);
+
+
+
+router.post(
+"/logout-all",
+logoutAllController
 );
 
 

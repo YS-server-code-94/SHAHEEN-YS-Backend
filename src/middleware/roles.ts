@@ -1,19 +1,15 @@
-import {
-Request,
-Response,
-NextFunction
-}
-from "express";
+
+import {Response,NextFunction} from "express";
+import {AuthRequest} from "../types/auth.js";
 
 
-
-export function requireRole(
-role:string
+export function roleMiddleware(
+role:"USER"|"ADMIN"
 ){
 
 return (
 
-req:Request,
+req:AuthRequest,
 
 res:Response,
 
@@ -33,8 +29,7 @@ error:"Unauthorized"
 }
 
 
-
-if(req.user.role !== role){
+if(req.user.role!==role){
 
 return res.status(403).json({
 
@@ -52,3 +47,4 @@ next();
 
 
 }
+

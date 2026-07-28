@@ -1,19 +1,26 @@
 import express from "express";
-import {globalRateLimiter} from "./middleware/rateLimit.js";
-import {securityMiddleware} from "./security/security.js";
-import { languageMiddleware } from "./middleware/language.js";
+
 import cors from "cors";
 import helmet from "helmet";
+import compression from "compression";
+import hpp from "hpp";
+import morgan from "morgan";
 import rateLimit from "express-rate-limit";
+
+import { globalRateLimiter } from "./middleware/rateLimit.js";
+import { securityMiddleware } from "./security/security.js";
+import { languageMiddleware } from "./middleware/language.js";
+import { errorHandler } from "./middleware/errorHandler.js";
 
 import authRoutes from "./auth/auth.routes.js";
 import chatRoutes from "./chat/chat.routes.js";
-import { errorHandler } from "./middleware/errorHandler.js";
 
+import { registerSwagger } from "./swagger/index.js";
+import { openApiSpec } from "./swagger/openapi.js";
 
 const app = express();
 
-
+/* ---------- Core Security ---------- */
 
 securityMiddleware.forEach(
 middleware=>app.use(middleware)
@@ -21,73 +28,73 @@ middleware=>app.use(middleware)
 
 app.use(globalRateLimiter);
 
-
 app.use(languageMiddleware);
 
+app.use(helmet());
 
-// Security
-app.use(
-  helmet()
-);
+app.use(compression());
 
+app.use(hpp());
 
-// CORS
-app.use(
-  cors({
-    origin: "*",
-    credentials: true
-  })
-);
+app.use(morgan("combined"));
 
+app.use(cors({
+origin:"*",
+credentials:true
+}));
 
-// Body parser
-app.use(
-  express.json({
-    limit: "10mb"
-  })
-);
+app.use(express.json({
+limit:"10mb"
+}));
 
+app.use(rateLimit({
+windowMs:60000,
+max:100,
+standardHeaders:true,
+legacyHeaders:false
+}));
 
-// Global Rate Limit
-app.use(
-  rateLimit({
-    windowMs: 60 * 1000,
-    max: 100,
-    standardHeaders: true,
-    legacyHeaders: false
-  })
-);
+/* ---------- Swagger ---------- */
 
+registerSwagger(app);
 
-// Health
 app.get(
-  "/health",
-  (_req: express.Request, res: express.Response) => {
-    res.json({
-      status: "ok",
-      service: "SHAHEEN-YS Backend"
-    });
-  }
+"/openapi.json",
+(_req,res)=>{
+res.json(openApiSpec);
+}
 );
 
+/* ---------- Health ---------- */
 
-// API Routes
-app.use(
-  "/api/v1/auth",
-  authRoutes
-);
+app.get("/health",(_req,res)=>{
+res.status(200).json({
+status:"ok",
+service:"SHAHEEN-YS Backend",
+timestamp:new Date().toISOString()
+});
+});
 
+app.get("/ready",(_req,res)=>{
+res.status(200).json({
+ready:true
+});
+});
 
-app.use(
-  "/api/v1/chat",
-  chatRoutes
-);
+app.get("/live",(_req,res)=>{
+res.status(200).json({
+alive:true
+});
+});
 
+/* ---------- API ---------- */
 
-// Error Handler
-app.use(
-  errorHandler
-);
+app.use("/api/v1/auth",authRoutes);
 
+app.use("/api/v1/chat",chatRoutes);
+
+/* ---------- Error ---------- */
+
+app.use(errorHandler);
 
 export default app;

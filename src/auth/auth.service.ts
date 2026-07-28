@@ -1,208 +1,326 @@
 import bcrypt from "bcryptjs";
 
-import { prisma } from "../database/prisma.js";
+import {
+prisma
+}
+from "../database/prisma.js";
+
 
 import {
-  createAccessToken,
-  createRefreshToken
-} from "./jwt.js";
-
-
-const REFRESH_EXPIRE_DAYS = 30;
-
-
-function refreshExpirationDate(){
-
-  const date = new Date();
-
-  date.setDate(
-    date.getDate() + REFRESH_EXPIRE_DAYS
-  );
-
-  return date;
+createAccessToken,
+createRefreshToken,
+verifyRefreshToken
 }
+from "./jwt.js";
+
+
+
+
+async function saveRefreshToken(
+userId:string
+){
+
+const token=createRefreshToken({
+id:userId
+});
+
+
+await prisma.refreshToken.create({
+
+data:{
+token,
+userId,
+expiresAt:new Date(
+Date.now()+30*24*60*60*1000
+)
+}
+
+});
+
+
+return token;
+
+}
+
 
 
 
 export async function register(
-  email:string,
-  password:string,
-  gender?: "MALE" | "FEMALE"
+email:string,
+password:string,
+gender:any
 ){
 
-  const existingUser =
-    await prisma.user.findUnique({
-      where:{
-        email
-      }
-    });
+const exists=
+await prisma.user.findUnique({
+where:{
+email
+}
+});
 
 
-  if(existingUser){
+if(exists){
 
-    throw new Error(
-      "User already exists"
-    );
-
-  }
-
-
-  const hashedPassword =
-    await bcrypt.hash(
-      password,
-      12
-    );
-
-
-  const user =
-    await prisma.user.create({
-
-      data:{
-        email,
-        password:hashedPassword,
-        gender
-      }
-
-    });
-
-
-
-  const accessToken =
-    createAccessToken({
-
-      id:user.id,
-      email:user.email
-
-    });
-
-
-
-  const refreshToken =
-    createRefreshToken({
-
-      id:user.id
-
-    });
-
-
-
-  await prisma.refreshToken.create({
-
-    data:{
-
-      token:refreshToken,
-
-      userId:user.id,
-
-      expiresAt:
-        refreshExpirationDate()
-
-    }
-
-  });
-
-
-
-  return {
-
-    accessToken,
-
-    refreshToken
-
-  };
+throw new Error(
+"User already exists"
+);
 
 }
+
+
+
+const hash=
+await bcrypt.hash(
+password,
+12
+);
+
+
+
+const user=
+await prisma.user.create({
+
+data:{
+email,
+password:hash,
+gender
+}
+
+});
+
+
+
+const refreshToken=
+await saveRefreshToken(
+user.id
+);
+
+
+
+return {
+
+accessToken:createAccessToken({
+
+id:user.id,
+email:user.email
+
+}),
+
+
+refreshToken
+
+};
+
+}
+
 
 
 
 
 export async function login(
-  email:string,
-  password:string
+email:string,
+password:string
 ){
 
-  const user =
-    await prisma.user.findUnique({
+const user=
+await prisma.user.findUnique({
 
-      where:{
-        email
-      }
+where:{
+email
+}
 
-    });
-
-
-
-  if(!user){
-
-    throw new Error(
-      "Invalid credentials"
-    );
-
-  }
+});
 
 
+if(!user){
 
-  const validPassword =
-    await bcrypt.compare(
-      password,
-      user.password
-    );
+throw new Error(
+"Invalid credentials"
+);
+
+}
 
 
 
-  if(!validPassword){
-
-    throw new Error(
-      "Invalid credentials"
-    );
-
-  }
+const valid=
+await bcrypt.compare(
+password,
+user.password
+);
 
 
 
-  const accessToken =
-    createAccessToken({
+if(!valid){
 
-      id:user.id,
+throw new Error(
+"Invalid credentials"
+);
 
-      email:user.email
-
-    });
-
-
-
-  const refreshToken =
-    createRefreshToken({
-
-      id:user.id
-
-    });
+}
 
 
 
-  await prisma.refreshToken.create({
-
-    data:{
-
-      token:refreshToken,
-
-      userId:user.id,
-
-      expiresAt:
-        refreshExpirationDate()
-
-    }
-
-  });
+const refreshToken=
+await saveRefreshToken(
+user.id
+);
 
 
 
-  return {
+return {
 
-    accessToken,
+accessToken:createAccessToken({
 
-    refreshToken
+id:user.id,
+email:user.email
 
-  };
+}),
+
+
+refreshToken
+
+};
+
+}
+
+
+
+
+
+export async function refresh(
+token:string
+){
+
+
+const stored=
+await prisma.refreshToken.findUnique({
+
+where:{
+token
+}
+
+});
+
+
+if(
+!stored ||
+stored.revoked
+){
+
+throw new Error(
+"Invalid refresh token"
+);
+
+}
+
+
+
+verifyRefreshToken(token);
+
+
+
+await prisma.refreshToken.update({
+
+where:{
+id:stored.id
+},
+
+data:{
+revoked:true
+}
+
+});
+
+
+
+const newToken=
+await saveRefreshToken(
+stored.userId
+);
+
+
+
+const user=
+await prisma.user.findUnique({
+
+where:{
+id:stored.userId
+}
+
+});
+
+
+
+return {
+
+accessToken:createAccessToken({
+
+id:user!.id,
+email:user!.email
+
+}),
+
+
+refreshToken:newToken
+
+};
+
+
+}
+
+
+
+
+
+export async function logout(
+token:string
+){
+
+await prisma.refreshToken.updateMany({
+
+where:{
+token
+},
+
+data:{
+revoked:true
+}
+
+});
+
+
+return {
+message:
+"Logged out successfully"
+};
+
+}
+
+
+
+
+export async function logoutAll(
+userId:string
+){
+
+await prisma.refreshToken.updateMany({
+
+where:{
+userId
+},
+
+data:{
+revoked:true
+}
+
+});
+
+
+return {
+
+message:
+"All sessions closed"
+
+};
 
 }

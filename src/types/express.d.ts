@@ -1,26 +1,13 @@
-import { JwtPayload } from "jsonwebtoken";
-
+import { AuthUser } from "../auth/auth.middleware.js";
 
 declare global {
+ namespace Express {
 
-namespace Express {
+  interface Request {
+    user?: AuthUser;
+  }
 
-interface Request {
-
-    user?: JwtPayload & {
-
-        id:string;
-
-        role?:string;
-
-    };
-
+ }
 }
-
-}
-
-
-}
-
 
 export {};
