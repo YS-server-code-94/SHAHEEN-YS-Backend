@@ -2,24 +2,24 @@ import { PrismaClient } from "@prisma/client";
 
 const prisma = new PrismaClient();
 
-async function main() {
+async function main(){
 
-  const users = await prisma.user.count();
+ const result = await prisma.user.count();
 
-  const tokens = await prisma.refreshToken.count();
+ const conversations = await prisma.conversation.count();
 
-  console.log({
-    users,
-    tokens
-  });
+ const messages = await prisma.message.count();
+
+ console.log({
+   users: result,
+   conversations,
+   messages
+ });
 
 }
 
 main()
-.catch((error)=>{
-  console.error(error);
-  process.exit(1);
-})
+.catch(console.error)
 .finally(async()=>{
-  await prisma.$disconnect();
+ await prisma.$disconnect();
 });

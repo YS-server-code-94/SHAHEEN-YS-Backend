@@ -1,0 +1,17 @@
+{
+  "errors": {
+    "unauthorized": "غير مصرح لك بالدخول",
+    "forbidden": "ليس لديك صلاحية لتنفيذ هذا الإجراء",
+    "not_found": "العنصر غير موجود",
+    "server_error": "حدث خطأ داخلي في الخادم"
+  },
+  "chat": {
+    "conversation_created": "تم إنشاء محادثة جديدة",
+    "message_saved": "تم حفظ الرسالة",
+    "assistant_response": "تم إنشاء الرد"
+  },
+  "auth": {
+    "login_success": "تم تسجيل الدخول بنجاح",
+    "register_success": "تم إنشاء الحساب بنجاح"
+  }
+}

@@ -5,36 +5,21 @@ from "express";
 
 
 import {
-
 authMiddleware
-
 }
 from "../auth/auth.middleware.js";
 
 
 import {
-
 chatRateLimiter
-
 }
 from "../middleware/rateLimit.js";
 
 
 import {
-
-requireRole
-
-}
-from "../middleware/roles.js";
-
-
-
-import {
-
 chatController
-
 }
-from "../chat/chat.controller.js";
+from "./chat.controller.js";
 
 
 
@@ -43,14 +28,10 @@ Router();
 
 
 
-router.use(
-authMiddleware
-);
+router.use(authMiddleware);
 
 
-router.use(
-chatRateLimiter
-);
+router.use(chatRateLimiter);
 
 
 

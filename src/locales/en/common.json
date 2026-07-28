@@ -1,0 +1,17 @@
+{
+  "errors": {
+    "unauthorized": "Unauthorized access",
+    "forbidden": "You do not have permission",
+    "not_found": "Resource not found",
+    "server_error": "Internal server error"
+  },
+  "chat": {
+    "conversation_created": "Conversation created",
+    "message_saved": "Message saved",
+    "assistant_response": "Assistant response generated"
+  },
+  "auth": {
+    "login_success": "Login successful",
+    "register_success": "Account created successfully"
+  }
+}
