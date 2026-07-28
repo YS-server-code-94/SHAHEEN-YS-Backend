@@ -1,0 +1,27 @@
+node_modules/
+dist/
+.env
+.env.*
+!.env.example
+
+*.log
+
+prisma/*.db
+prisma/migrations/
+
+.DS_Store
+
+.vscode/
+.idea/
+
+
+# Prisma generated
+src/generated/
+.claude/
+.agents/
+.windsurf/
+skills-lock.json
+
+# Build output
+dist/
+
