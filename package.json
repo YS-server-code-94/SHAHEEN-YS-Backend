@@ -8,6 +8,7 @@
     "dev": "tsx watch src/server.ts",
     "build": "tsc",
     "start": "node dist/server.js",
+    "start:prod": "NODE_ENV=production node dist/server.js",
     "test": "jest",
     "lint": "eslint src",
     "format": "prettier --write 'src/**/*.ts'",
@@ -16,7 +17,10 @@
     "openapi": "node dist/swagger/generate.js",
     "health": "curl http://localhost:3000/health",
     "ready": "curl http://localhost:3000/ready",
-    "live": "curl http://localhost:3000/live"
+    "live": "curl http://localhost:3000/live",
+    "prisma:generate": "prisma generate",
+    "prisma:migrate": "prisma migrate dev",
+    "prisma:deploy": "prisma migrate deploy"
   },
   "keywords": [
     "shaheen-ai",
@@ -53,7 +57,7 @@
     "openai": "^4.104.0",
     "pino": "^8.17.0",
     "pino-pretty": "^10.3.1",
-    "prisma": "^6.19.3",
+    "prisma": "^4.19.0",
     "swagger-jsdoc": "^6.3.0",
     "swagger-ui-express": "^5.0.1",
     "tiktoken": "^1.0.22",
@@ -83,5 +87,6 @@
   },
   "engines": {
     "node": ">=18.0.0"
-  }
+  },
+  "postinstall": "npx prisma generate && npm run build"
 }
