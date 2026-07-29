@@ -1,24 +1,24 @@
 import {
-AIProviderName,
-AIResponse
+ AIProviderName,
+ AIResponse
 } from "./ai.types.js";
 
 
 import {
-createProvider
+ createProvider
 } from "./provider.factory.js";
 
 
 
 export interface GatewayMessage {
 
-role:
-"user" |
-"assistant" |
-"system";
+ role:
+ "user" |
+ "assistant" |
+ "system";
 
 
-content:string;
+ content:string;
 
 }
 
@@ -26,18 +26,13 @@ content:string;
 
 export interface GatewayInput {
 
+ provider?:AIProviderName;
 
-provider?:AIProviderName;
+ messages:GatewayMessage[];
 
+ model?:string;
 
-messages:GatewayMessage[];
-
-
-model?:string;
-
-
-stream?:boolean;
-
+ stream?:boolean;
 
 }
 
@@ -47,76 +42,73 @@ stream?:boolean;
 class AIGateway {
 
 
-async chat(
-input:GatewayInput
-):Promise<AIResponse>{
+ async chat(
+ input:GatewayInput
+ ):Promise<AIResponse>{
+
+
+ const providerName =
+ input.provider ?? "OPENAI";
+
+
+ const adapter =
+ createProvider(providerName);
 
 
 
-const providerName =
-input.provider ?? "OPENAI";
+ const start =
+ Date.now();
 
 
 
-const adapter =
-createProvider(
-providerName
-);
+ const lastMessage =
+ input.messages[
+ input.messages.length - 1
+ ];
 
 
 
-const start =
-Date.now();
+ if(!lastMessage){
+
+ throw new Error(
+ "No message provided"
+ );
+
+ }
 
 
 
-const lastMessage =
-input.messages[
-input.messages.length - 1
-];
+ const response =
+ await adapter.chat({
+
+ message:
+ lastMessage.content,
+
+ model:
+ input.model,
+
+ stream:
+ input.stream
+
+ });
 
 
 
-if(!lastMessage){
+ return {
 
-throw new Error(
-"No messages provided"
-);
+ ...response,
 
-}
-
+ provider:
+ providerName,
 
 
-const response =
-await adapter.chat({
+ latency:
+ Date.now()-start
 
-message:
-lastMessage.content,
-
-model:
-input.model,
-
-stream:
-input.stream
-
-});
+ };
 
 
-
-return {
-
-...response,
-
-provider:
-providerName,
-
-latency:
-Date.now()-start
-
-};
-
-
-}
+ }
 
 
 }
@@ -125,4 +117,3 @@ Date.now()-start
 
 export const aiGateway =
 new AIGateway();
-

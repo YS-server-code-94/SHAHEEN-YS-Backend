@@ -1,62 +1,54 @@
-
-
 import {
-AIAdapter,
-AIProviderName
+  AIAdapter,
+  AIProviderName
 } from "./ai.types.js";
 
 
-import {
-OpenAIAdapter
-} from "./adapters/openai.adapter.js";
-
-
-import {
-GeminiAdapter
-} from "./adapters/gemini.adapter.js";
-
-
-import {
-ClaudeAdapter
-} from "./adapters/claude.adapter.js";
-
-
-import {
-GroqAdapter
-} from "./adapters/groq.adapter.js";
+import { OpenAIAdapter } from "./adapters/openai.adapter.js";
+import { GeminiAdapter } from "./adapters/gemini.adapter.js";
+import { ClaudeAdapter } from "./adapters/claude.adapter.js";
+import { GroqAdapter } from "./adapters/groq.adapter.js";
 
 
 
 export function createProvider(
-name:AIProviderName
-):AIAdapter {
+  provider: AIProviderName
+): AIAdapter {
 
 
-switch(name){
+  switch(provider){
 
 
-case "OPENAI":
-return new OpenAIAdapter();
+    case "OPENAI":
+
+      return new OpenAIAdapter();
 
 
-case "GEMINI":
-return new GeminiAdapter();
+
+    case "GEMINI":
+
+      return new GeminiAdapter();
 
 
-case "CLAUDE":
-return new ClaudeAdapter();
+
+    case "CLAUDE":
+
+      return new ClaudeAdapter();
 
 
-case "GROQ":
-return new GroqAdapter();
+
+    case "GROQ":
+
+      return new GroqAdapter();
 
 
-default:
-return new OpenAIAdapter();
 
+    default:
+
+      throw new Error(
+        `Unsupported AI Provider: ${provider}`
+      );
+
+  }
 
 }
-
-
-}
-
